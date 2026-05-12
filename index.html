@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Model Tester</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
+</head>
+
+<body>
+
+<h1>Teachable Machine Model Tester</h1>
+
+<p>Upload model.json</p>
+<input type="file" id="modelFile">
+
+<p>Upload metadata.json</p>
+<input type="file" id="metadataFile">
+
+<p>Upload weights.bin</p>
+<input type="file" id="weightsFile">
+
+<br><br>
+
+<button onclick="loadModel()">Load and Test Model</button>
+
+<h2 id="result"></h2>
+
+<script>
+
+let model;
+
+async function loadModel() {
+
+    const modelFile =
+        document.getElementById("modelFile").files[0];
+
+    const metadataFile =
+        document.getElementById("metadataFile").files[0];
+
+    const modelURL = URL.createObjectURL(modelFile);
+    const metadataURL = URL.createObjectURL(metadataFile);
+
+    model = await tmImage.load(modelURL, metadataURL);
+
+    testModel();
+}
+
+async function testModel() {
+
+    const testImages = [
+        {
+            src: "test/cat1.jpg",
+            label: "Cat"
+        },
+        {
+            src: "test/dog1.jpg",
+            label: "Dog"
+        }
+    ];
+
+    let correct = 0;
+
+    for (let i = 0; i < testImages.length; i++) {
+
+        const img = new Image();
+        img.src = testImages[i].src;
+
+        await new Promise(resolve => {
+            img.onload = resolve;
+        });
+
+        const prediction =
+            await model.predict(img);
+
+        let highest = prediction[0];
+
+        for (let j = 1; j < prediction.length; j++) {
+
+            if (prediction[j].probability >
+                highest.probability) {
+
+                highest = prediction[j];
+            }
+        }
+
+        if (highest.className ==
+            testImages[i].label) {
+
+            correct++;
+        }
+    }
+
+    let accuracy =
+        correct / testImages.length * 100;
+
+    document.getElementById("result").innerHTML =
+        "Accuracy: " + accuracy.toFixed(2) + "%";
+}
+
+</script>
+
+</body>
+</html>
